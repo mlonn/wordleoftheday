@@ -114,6 +114,9 @@ body {
 .tile[data-state="empty"] {
   border: 2px solid var(--color-tone-4);
 }
+.tile:hover[data-state="empty"] {
+  background-color: var(--color-absent);
+}
 .tile[data-state="tbd"] {
   background-color: var(--color-tone-7);
   border: 2px solid var(--color-tone-3);
@@ -201,13 +204,19 @@ footer {
   border-top: 1px solid var(--color-tone-4);
 }
 
-h1 {
+h1,
+h2 {
   color: var(--color-tone-1);
   font-weight: 700;
   font-size: 36px;
+  margin: 0px;
   letter-spacing: 0.2rem;
   text-transform: uppercase;
   text-align: center;
+}
+h2 {
+  font-size: 16px;
+  margin: 0px;
 }
 .center {
   display: grid;
@@ -253,17 +262,39 @@ footer .title {
 }
 #board {
   display: grid;
-  grid-template-columns: 1fr 5fr 1fr;
-  grid-gap: 5px;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: 1fr 1fr;
+
+  grid-template-areas:
+    "left row row row row row right"
+    ". . reveal reveal reveal . .";
+  grid-gap: 10px;
   padding: 10px;
   box-sizing: border-box;
 }
 .row {
   display: grid;
+  grid-area: row;
+  position: relative;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   grid-gap: 5px;
 }
+#reveal {
+  display: grid;
+  grid-area: reveal;
+  color: var(--color-tone-1);
+  content: "";
+  letter-spacing: 0.2rem;
+  align-items: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-family: inherit;
+}
+#reveal:hover {
+  background-color: var(--color-absent);
+}
+
 .win {
   animation-name: Bounce;
   animation-duration: 1000ms;
@@ -295,18 +326,11 @@ button {
   font-weight: bold;
   border: 0;
   padding: 0;
-  margin: 0 6px 0 0;
-  width: 100%;
-  height: 100%;
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
   background-color: var(--key-bg);
   color: var(--key-text-color);
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   text-transform: uppercase;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
 }
