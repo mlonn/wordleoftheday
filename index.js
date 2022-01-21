@@ -2,17 +2,20 @@ const start = new Date(2021, 5, 19, 0, 0, 0, 0);
 
 const today = new Date();
 const diff = today.getTime() - start.getTime();
-let wordIndex = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
+const days = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
+let wordIndex = days;
 let interval;
 const word = words[wordIndex];
 const subtitle = document.getElementById("subtitle");
 subtitle.textContent = `Wordle ${wordIndex}`;
 const row = document.getElementById("word");
 const prev = document.getElementById("prev");
-prev.id = "prev";
-prev.textContent = "PREV";
+const next = document.getElementById("next");
+next.title = "No peaking at tomorrow";
+next.disabled = true;
 
 prev.addEventListener("click", () => {
+  next.title = "";
   if (wordIndex > 0) {
     wordIndex--;
     populateWord(words[wordIndex]);
@@ -31,15 +34,13 @@ for (letter of word) {
 }
 populateWord(word);
 
-const next = document.getElementById("next");
-next.id = "next";
-next.textContent = "NEXT";
 next.addEventListener("click", () => {
   if (wordIndex < days) {
     wordIndex++;
     populateWord(words[wordIndex]);
     subtitle.textContent = `Wordle ${wordIndex}`;
   } else {
+    next.title = "No peaking at tomorrow";
     next.disabled = true;
   }
 });
