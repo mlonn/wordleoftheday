@@ -10,7 +10,7 @@ const today = new Date();
 const diff = today.getTime() - start.getTime();
 const days = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
 
-let wordIndex = 0;
+let wordIndex = days;
 let word = words[wordIndex];
 
 reveal.addEventListener("click", () => {
