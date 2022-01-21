@@ -1,3 +1,8 @@
+const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+if (preferDark) {
+  document.body.className = "nightmode";
+}
+
 const subtitle = document.getElementById("subtitle");
 const row = document.getElementById("word");
 const prev = document.getElementById("prev");
@@ -120,9 +125,4 @@ function addDays(date, days) {
   var result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
-}
-
-const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-if (preferDark) {
-  document.body.className = "nightmode";
 }
