@@ -188,6 +188,10 @@ header {
   color: var(--color-tone-1);
 }
 
+a {
+  color: unset;
+  text-decoration: none;
+}
 header {
   height: var(--header-height);
   border-bottom: 1px solid var(--color-tone-4);
@@ -196,6 +200,7 @@ footer {
   height: var(--footer-height);
   border-top: 1px solid var(--color-tone-4);
 }
+
 h1 {
   color: var(--color-tone-1);
   font-weight: 700;
@@ -229,7 +234,6 @@ footer .title {
   position: absolute;
   left: 0;
   right: 0;
-  pointer-events: none;
 }
 
 @media (max-width: 440px) {
