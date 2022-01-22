@@ -133,7 +133,9 @@ body {
   animation-name: PopIn;
   animation-duration: 100ms;
 }
-
+.tile.selected {
+  border: 2px solid var(--key-text-color);
+}
 @keyframes PopIn {
   from {
     transform: scale(0.8);

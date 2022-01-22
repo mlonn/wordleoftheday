@@ -14,7 +14,7 @@ const today = new Date();
 const diff = today.getTime() - start.getTime();
 const days = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
 let filters;
-let wordIndex = days - 2;
+let wordIndex = days;
 let word = words[wordIndex];
 
 reveal.addEventListener("click", () => {
@@ -78,6 +78,8 @@ for (let i = 0; i < 5; i++) {
     l.className = "tile";
 
     l.addEventListener("click", async () => {
+      selectedInput.classList.remove("selected");
+      l.classList.add("selected");
       selectedInput = l;
     });
     document.getElementById("input").appendChild(l);
@@ -154,14 +156,18 @@ document.addEventListener("keydown", async (e) => {
       }
     }
     if (nextSelectedInput) {
+      selectedInput.classList.remove("selected");
       selectedInput = nextSelectedInput;
+      nextSelectedInput.classList.add("selected");
     }
   }
   updateFilters();
   updateLetterContent();
   updateFilters();
   if (nextSelectedInput) {
+    selectedInput.classList.remove("selected");
     selectedInput = nextSelectedInput;
+    nextSelectedInput.classList.add("selected");
   }
 });
 setWord(wordIndex);
@@ -219,6 +225,7 @@ function restoreState() {
   }
   const i = inputLetters.findIndex((l) => l.textContent === "");
   selectedInput = inputLetters[i];
+  selectedInput.classList.add("selected");
 }
 
 function updateFilters() {
