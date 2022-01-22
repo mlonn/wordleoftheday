@@ -13,8 +13,8 @@ const start = new Date(2021, 5, 19, 0, 0, 0, 0);
 const today = new Date();
 const diff = today.getTime() - start.getTime();
 const days = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
-
-let wordIndex = days;
+let filters;
+let wordIndex = days - 2;
 let word = words[wordIndex];
 
 reveal.addEventListener("click", () => {
@@ -79,33 +79,11 @@ for (let i = 0; i < 5; i++) {
 
     l.addEventListener("click", async () => {
       selectedInput = l;
-      const i = inputLetters.indexOf(l);
-      let state = l.getAttribute("data-state");
-      console.log(state);
-      switch (state) {
-        case "empty":
-          state = "absent";
-          break;
-        case "absent":
-          state = "present";
-          break;
-        case "present":
-          state = "correct";
-          break;
-        case "correct":
-          state = "empty";
-          break;
-        default:
-          break;
-      }
-      await animate(l, "pop", state);
-      animate(l, "idle");
-      updateFilters();
     });
-
     document.getElementById("input").appendChild(l);
 
     inputLetters.push(l);
+    selectedInput = inputLetters[0];
   }
 }
 
@@ -115,80 +93,115 @@ get.addEventListener("click", () => {
     filters,
     words.filter((word) => {
       for (const filter of filters) {
-        if (
-          filter.state === "correct" &&
-          !word[filter.index] === filter.letter
-        ) {
-          console.log(word, filter, "failed correct");
-          return false;
-        }
-        if (filter.state === "present" && !word.includes(filter.letter)) {
-          console.log(word, filter, "failed present");
-          return false;
-        }
-        if (filter.state === "absent" && word.includes(filter.letter)) {
-          console.log(word, filter, "failed absent");
-          return false;
+        for (letter of filter) {
+          if (letter) {
+            if (
+              letter.state === "correct" &&
+              word[letter.index] !== letter.letter
+            ) {
+              return false;
+            }
+            if (letter.state === "present" && !word.includes(letter.letter)) {
+              return false;
+            }
+            if (letter.state === "absent" && word.includes(letter.letter)) {
+              return false;
+            }
+          }
         }
       }
-      console.log(word, "passed");
+
       return true;
     })
   );
 });
 document.addEventListener("keydown", async (e) => {
-  const key = e.key;
+  const key = e.key.toLowerCase();
   const isLetter = key >= "a" && key <= "z" && key.length === 1;
+  let nextSelectedInput;
   if (isLetter) {
     if (selectedInput) {
-      if (selectedInput.getAttribute("data-state") === "empty") {
-        selectedInput.setAttribute("data-state", "absent");
-      }
       const i = inputLetters.indexOf(selectedInput);
-      if (i < inputLetters.length && selectedInput.textContent === "") {
-        selectedInput.textContent = e.key;
-      }
+      selectedInput.textContent = key;
       if (i < inputLetters.length - 1) {
-        animate(selectedInput, "pop");
-        animate(selectedInput, "idle");
-        selectedInput = inputLetters[i + 1];
+        nextSelectedInput = inputLetters[i + 1];
       }
     } else {
-      selectedInput = inputLetters[0];
-      if (selectedInput.getAttribute("data-state") === "empty") {
-        selectedInput.setAttribute("data-state", "absent");
-      }
-      animate(selectedInput, "pop");
-      animate(selectedInput, "idle");
-      selectedInput.textContent = e.key;
-
-      selectedInput = inputLetters[1];
+      inputLetters[0].textContent = key;
+      nextSelectedInput = inputLetters[1];
     }
   }
-  if (key === "Backspace" && selectedInput) {
-    if (selectedInput.textContent !== "") {
-      const i = inputLetters.indexOf(selectedInput);
-      selectedInput.textContent = "";
-      await animate(selectedInput, "pop");
-      animate(selectedInput, "idle");
-      selectedInput = inputLetters[i - 1];
-    } else {
-      const i = inputLetters.indexOf(selectedInput);
-      selectedInput = inputLetters[i - 1];
-      if (selectedInput) {
+  if (key === "backspace") {
+    if (selectedInput) {
+      if (selectedInput.textContent !== "") {
+        const i = inputLetters.indexOf(selectedInput);
         selectedInput.textContent = "";
-        await animate(selectedInput, "pop");
-        animate(selectedInput, "idle");
+        animate(selectedInput, "pop", "empty");
+        nextSelectedInput = inputLetters[i - 1];
+      } else {
+        const i = inputLetters.indexOf(selectedInput);
+        nextSelectedInput = inputLetters[i - 1];
+        if (nextSelectedInput) {
+          nextSelectedInput.textContent = "";
+          animate(nextSelectedInput, "pop", "empty");
+        }
       }
+    } else {
+      const i = inputLetters.findIndex((l) => l.textContent === "");
+      nextSelectedInput = inputLetters[i - 1];
+      if (nextSelectedInput) {
+        nextSelectedInput.textContent = "";
+        animate(nextSelectedInput, "pop", "empty");
+      }
+    }
+    if (nextSelectedInput) {
+      selectedInput = nextSelectedInput;
     }
   }
   updateFilters();
+  updateLetterContent();
+  updateFilters();
+  if (nextSelectedInput) {
+    selectedInput = nextSelectedInput;
+  }
 });
 setWord(wordIndex);
 restoreState();
 
+function updateLetterContent() {
+  const i = inputLetters.indexOf(selectedInput);
+  const currentWordIndex = Math.floor(i / 5);
+  const filter = filters[currentWordIndex];
+  const wordSoFar = filter.reduce((acc, cur) => {
+    if (cur) {
+      return acc + cur.letter;
+    }
+    return acc;
+  }, "");
+
+  let correct = 0;
+  for (let j = 4; j >= 0; j--) {
+    const l = inputLetters[5 * currentWordIndex + j];
+    if (l.textContent !== "") {
+      const key = l.textContent;
+      if (word[j] === key) {
+        animate(l, "pop", "correct");
+        correct++;
+      } else if (
+        (word[j] !== key &&
+          word.includes(key) &&
+          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)) ||
+        getOccurrence(word, key) >=
+          getOccurrence(wordSoFar.slice(0, j + 1), key) + correct
+      ) {
+        animate(l, "pop", "present");
+      } else animate(l, "pop", "absent");
+    }
+  }
+}
+
 function restoreState() {
-  const filters = JSON.parse(localStorage.getItem("filters")) || [
+  filters = JSON.parse(localStorage.getItem("filters")) || [
     [null, null, null, null, null],
     [null, null, null, null, null],
     [null, null, null, null, null],
@@ -202,20 +215,12 @@ function restoreState() {
       if (current) {
         l.textContent = current.letter;
         l.setAttribute("data-state", current.state);
-        console.log(current, l.textContent, l.getAttribute("data-state"));
       }
     }
   }
 }
 
 function updateFilters() {
-  const filters = JSON.parse(localStorage.getItem("filters")) || [
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-  ];
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < 5; j++) {
       const letter = inputLetters[j + 5 * i];
@@ -225,10 +230,11 @@ function updateFilters() {
           letter: letter.textContent,
           state: letter.getAttribute("data-state"),
         };
+      } else {
+        filters[i][j] = null;
       }
     }
   }
-  console.log(filters);
   localStorage.setItem("filters", JSON.stringify(filters));
   return filters;
 }
@@ -258,19 +264,11 @@ function setWord(newWordIndex) {
 function clearLetters() {
   for (l of letters) {
     animate(l, "pop", "empty");
-    l.classList.remove("win");
     l.textContent = "";
   }
   for (l of inputLetters) {
     animate(l, "pop", "empty");
-    l.classList.remove("win");
     l.textContent = "";
-  }
-  for (l of letters) {
-    animate(l, "idle");
-  }
-  for (l of inputLetters) {
-    animate(l, "idle");
   }
 }
 
@@ -279,7 +277,7 @@ async function populateWord(w) {
     await populateLetter(l);
   }
   for (l of letters) {
-    animate(l, "idle", undefined, "win");
+    animate(l, undefined, undefined, "win");
   }
 }
 
@@ -295,6 +293,8 @@ async function populateLetter(l) {
 function animate(elem, animation, state, className) {
   return new Promise((resolve) => {
     function handleAnimationEnd() {
+      elem.setAttribute("data-animation", "idle");
+      elem.classList.remove(className);
       resolve(elem);
     }
     elem.addEventListener("animationend", handleAnimationEnd, { once: true });
@@ -314,4 +314,8 @@ function addDays(date, days) {
   var result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
+}
+
+function getOccurrence(word, letter) {
+  return Array.from(word).filter((v) => v === letter).length;
 }
