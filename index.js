@@ -83,7 +83,6 @@ for (let i = 0; i < 5; i++) {
     document.getElementById("input").appendChild(l);
 
     inputLetters.push(l);
-    selectedInput = inputLetters[0];
   }
 }
 
@@ -218,6 +217,8 @@ function restoreState() {
       }
     }
   }
+  const i = inputLetters.findIndex((l) => l.textContent === "");
+  selectedInput = inputLetters[i];
 }
 
 function updateFilters() {
