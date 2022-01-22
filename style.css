@@ -114,9 +114,6 @@ body {
 .tile[data-state="empty"] {
   border: 2px solid var(--color-tone-4);
 }
-.tile:hover[data-state="empty"] {
-  background-color: var(--color-absent);
-}
 .tile[data-state="tbd"] {
   background-color: var(--color-tone-7);
   border: 2px solid var(--color-tone-3);
@@ -346,4 +343,24 @@ button:disabled {
 
 button.fade {
   transition: background-color 0.1s ease, color 0.1s ease;
+}
+.blinking-cursor {
+  font-weight: 100;
+  font-size: 30px;
+  color: var(--tile-text-color);
+  -webkit-animation: 1s blink step-end infinite;
+  -moz-animation: 1s blink step-end infinite;
+  -ms-animation: 1s blink step-end infinite;
+  -o-animation: 1s blink step-end infinite;
+  animation: 1s blink step-end infinite;
+}
+
+@keyframes blink {
+  from,
+  to {
+    color: transparent;
+  }
+  50% {
+    color: var(--color-tone-7);
+  }
 }

@@ -26,6 +26,10 @@ next.addEventListener("click", () => {
 });
 
 const letters = [];
+const inputLetters = [];
+const boardState = ["", "", "", "", "", ""];
+const evaluations = [null, null, null, null, null];
+let selectedInput;
 for (letter of word) {
   const l = document.createElement("div");
   l.className = "tile";
@@ -48,6 +52,78 @@ for (letter of word) {
   row.appendChild(l);
   letters.push(l);
 }
+for (letter of word) {
+  const l = document.createElement("div");
+  l.className = "tile";
+  l.addEventListener("click", async () => {
+    const i = inputLetters.indexOf(l);
+    let state = l.getAttribute("data-state");
+    console.log(state);
+    switch (state) {
+      case "empty":
+        state = "absent";
+        break;
+      case "absent":
+        state = "present";
+        break;
+      case "present":
+        state = "correct";
+        break;
+      case "correct":
+        state = "empty";
+        break;
+      default:
+        break;
+    }
+    await animate(l, "pop", state);
+    animate(l, "idle");
+    evaluations[i] = state;
+  });
+
+  document.getElementById("input").appendChild(l);
+  l.appendChild(document.createElement("span"));
+  inputLetters.push(l);
+}
+document.addEventListener("keydown", async (e) => {
+  const key = e.key;
+  const isLetter = key >= "a" && key <= "z" && key.length === 1;
+  if (isLetter) {
+    if (selectedInput) {
+      const i = inputLetters.indexOf(selectedInput);
+      if (i < inputLetters.length && selectedInput.textContent === "") {
+        selectedInput.textContent = e.key;
+      }
+      if (i < inputLetters.length - 1) {
+        await animate(selectedInput, "pop");
+        animate(selectedInput, "idle");
+        selectedInput = inputLetters[i + 1];
+      }
+    } else {
+      selectedInput = inputLetters[0];
+      await animate(selectedInput, "pop");
+      animate(selectedInput, "idle");
+      selectedInput.textContent = e.key;
+      selectedInput = inputLetters[1];
+    }
+  }
+  if (key === "Backspace" && selectedInput) {
+    if (selectedInput.textContent !== "") {
+      const i = inputLetters.indexOf(selectedInput);
+      selectedInput.textContent = "";
+      await animate(selectedInput, "pop");
+      animate(selectedInput, "idle");
+      selectedInput = inputLetters[i - 1];
+    } else {
+      const i = inputLetters.indexOf(selectedInput);
+      selectedInput = inputLetters[i - 1];
+      if (selectedInput) {
+        selectedInput.textContent = "";
+        await animate(selectedInput, "pop");
+        animate(selectedInput, "idle");
+      }
+    }
+  }
+});
 setWord(wordIndex);
 
 function setWord(newWordIndex) {
@@ -77,6 +153,17 @@ function clearLetters() {
     animate(l, "pop", "empty");
     l.classList.remove("win");
     l.textContent = "";
+  }
+  for (l of inputLetters) {
+    animate(l, "pop", "empty");
+    l.classList.remove("win");
+    l.textContent = "";
+  }
+  for (l of letters) {
+    animate(l, "idle");
+  }
+  for (l of inputLetters) {
+    animate(l, "idle");
   }
 }
 
