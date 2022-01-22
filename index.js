@@ -1,10 +1,14 @@
+const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+if (preferDark) {
+  document.body.className = "nightmode";
+}
 const subtitle = document.getElementById("subtitle");
 const row = document.getElementById("word");
 const prev = document.getElementById("prev");
 const next = document.getElementById("next");
 const reveal = document.getElementById("reveal");
+const get = document.getElementById("get");
 const date = document.getElementById("date");
-
 const start = new Date(2021, 5, 19, 0, 0, 0, 0);
 const today = new Date();
 const diff = today.getTime() - start.getTime();
@@ -24,11 +28,26 @@ prev.addEventListener("click", () => {
 next.addEventListener("click", () => {
   setWord(wordIndex + 1);
 });
-
+const a = {
+  boardState: ["ouija", "hello", "", "", "", ""],
+  evaluations: [
+    ["absent", "absent", "present", "absent", "absent"],
+    ["absent", "present", "absent", "absent", "absent"],
+    null,
+    null,
+    null,
+    null,
+  ],
+  rowIndex: 2,
+  solution: "wince",
+  gameStatus: "IN_PROGRESS",
+  lastPlayedTs: 1642852867837,
+  lastCompletedTs: null,
+  restoringFromLocalStorage: null,
+  hardMode: false,
+};
 const letters = [];
 const inputLetters = [];
-const boardState = ["", "", "", "", "", ""];
-const evaluations = [null, null, null, null, null];
 let selectedInput;
 for (letter of word) {
   const l = document.createElement("div");
@@ -52,57 +71,97 @@ for (letter of word) {
   row.appendChild(l);
   letters.push(l);
 }
-for (letter of word) {
-  const l = document.createElement("div");
-  l.className = "tile";
-  l.addEventListener("click", async () => {
-    const i = inputLetters.indexOf(l);
-    let state = l.getAttribute("data-state");
-    console.log(state);
-    switch (state) {
-      case "empty":
-        state = "absent";
-        break;
-      case "absent":
-        state = "present";
-        break;
-      case "present":
-        state = "correct";
-        break;
-      case "correct":
-        state = "empty";
-        break;
-      default:
-        break;
-    }
-    await animate(l, "pop", state);
-    animate(l, "idle");
-    evaluations[i] = state;
-  });
 
-  document.getElementById("input").appendChild(l);
-  l.appendChild(document.createElement("span"));
-  inputLetters.push(l);
+for (let i = 0; i < 5; i++) {
+  for (j in word) {
+    const l = document.createElement("div");
+    l.className = "tile";
+
+    l.addEventListener("click", async () => {
+      selectedInput = l;
+      const i = inputLetters.indexOf(l);
+      let state = l.getAttribute("data-state");
+      console.log(state);
+      switch (state) {
+        case "empty":
+          state = "absent";
+          break;
+        case "absent":
+          state = "present";
+          break;
+        case "present":
+          state = "correct";
+          break;
+        case "correct":
+          state = "empty";
+          break;
+        default:
+          break;
+      }
+      await animate(l, "pop", state);
+      animate(l, "idle");
+      updateFilters();
+    });
+
+    document.getElementById("input").appendChild(l);
+
+    inputLetters.push(l);
+  }
 }
+
+get.addEventListener("click", () => {
+  const filters = updateFilters();
+  console.log(
+    filters,
+    words.filter((word) => {
+      for (const filter of filters) {
+        if (
+          filter.state === "correct" &&
+          !word[filter.index] === filter.letter
+        ) {
+          console.log(word, filter, "failed correct");
+          return false;
+        }
+        if (filter.state === "present" && !word.includes(filter.letter)) {
+          console.log(word, filter, "failed present");
+          return false;
+        }
+        if (filter.state === "absent" && word.includes(filter.letter)) {
+          console.log(word, filter, "failed absent");
+          return false;
+        }
+      }
+      console.log(word, "passed");
+      return true;
+    })
+  );
+});
 document.addEventListener("keydown", async (e) => {
   const key = e.key;
   const isLetter = key >= "a" && key <= "z" && key.length === 1;
   if (isLetter) {
     if (selectedInput) {
+      if (selectedInput.getAttribute("data-state") === "empty") {
+        selectedInput.setAttribute("data-state", "absent");
+      }
       const i = inputLetters.indexOf(selectedInput);
       if (i < inputLetters.length && selectedInput.textContent === "") {
         selectedInput.textContent = e.key;
       }
       if (i < inputLetters.length - 1) {
-        await animate(selectedInput, "pop");
+        animate(selectedInput, "pop");
         animate(selectedInput, "idle");
         selectedInput = inputLetters[i + 1];
       }
     } else {
       selectedInput = inputLetters[0];
-      await animate(selectedInput, "pop");
+      if (selectedInput.getAttribute("data-state") === "empty") {
+        selectedInput.setAttribute("data-state", "absent");
+      }
+      animate(selectedInput, "pop");
       animate(selectedInput, "idle");
       selectedInput.textContent = e.key;
+
       selectedInput = inputLetters[1];
     }
   }
@@ -123,8 +182,56 @@ document.addEventListener("keydown", async (e) => {
       }
     }
   }
+  updateFilters();
 });
 setWord(wordIndex);
+restoreState();
+
+function restoreState() {
+  const filters = JSON.parse(localStorage.getItem("filters")) || [
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+  ];
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      const l = inputLetters[j + 5 * i];
+      const current = filters[i][j];
+      if (current) {
+        l.textContent = current.letter;
+        l.setAttribute("data-state", current.state);
+        console.log(current, l.textContent, l.getAttribute("data-state"));
+      }
+    }
+  }
+}
+
+function updateFilters() {
+  const filters = JSON.parse(localStorage.getItem("filters")) || [
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+  ];
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      const letter = inputLetters[j + 5 * i];
+      if (letter.textContent != "") {
+        filters[i][j] = {
+          index: j,
+          letter: letter.textContent,
+          state: letter.getAttribute("data-state"),
+        };
+      }
+    }
+  }
+  console.log(filters);
+  localStorage.setItem("filters", JSON.stringify(filters));
+  return filters;
+}
 
 function setWord(newWordIndex) {
   wordIndex = newWordIndex;
@@ -207,9 +314,4 @@ function addDays(date, days) {
   var result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
-}
-
-const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-if (preferDark) {
-  document.body.className = "nightmode";
 }
