@@ -76,6 +76,7 @@ for (let i = 0; i < numberOfGuesses; i++) {
 }
 
 get.addEventListener("click", getWords);
+
 document.addEventListener("keydown", async (e) => {
   const key = e.key.toLowerCase();
   const isLetter = key >= "a" && key <= "z" && key.length === 1;
@@ -84,11 +85,13 @@ document.addEventListener("keydown", async (e) => {
     if (selectedInput) {
       const i = inputLetters.indexOf(selectedInput);
       selectedInput.textContent = key;
+      animate(selectedInput, "pop", "tbd");
       if (i < inputLetters.length - 1) {
         nextSelectedInput = inputLetters[i + 1];
       }
     } else {
       inputLetters[0].textContent = key;
+      animate(selectedInput, "pop", "tbd");
       nextSelectedInput = inputLetters[1];
     }
   }
@@ -121,9 +124,7 @@ document.addEventListener("keydown", async (e) => {
       nextSelectedInput.classList.add("selected");
     }
   }
-  updateFilters();
-  updateLetterContent();
-  updateFilters();
+
   if (nextSelectedInput) {
     selectedInput.classList.remove("selected");
     selectedInput = nextSelectedInput;
@@ -136,10 +137,11 @@ document.addEventListener("keydown", async (e) => {
 setWord(wordIndex);
 restoreState();
 
-function getWords() {
+async function getWords() {
+  await updateLetterContent();
   const filters = updateFilters();
   document.getElementById("possible").innerHTML = "";
-  const possible = shuffle(words).filter((w) => {
+  const possible = words.filter((w) => {
     for (const filter of filters) {
       for (letter of filter) {
         if (letter) {
@@ -164,7 +166,6 @@ function getWords() {
 
     return true;
   });
-  document.getElementById("possible").innerHTML = "";
   for (poss of possible) {
     for (p of poss) {
       const l = document.createElement("div");
@@ -178,38 +179,39 @@ function getWords() {
   }
 }
 
-function updateLetterContent() {
-  const i = inputLetters.indexOf(selectedInput);
-  const currentWordIndex = Math.floor(i / 5);
-  const filter = filters[currentWordIndex];
-  const wordSoFar = filter.reduce((acc, cur) => {
-    if (cur) {
-      return acc + cur.letter;
-    }
-    return acc;
-  }, "");
+async function updateLetterContent() {
+  for (let i = 0; i < numberOfGuesses; i++) {
+    const currentWordIndex = Math.floor(i / 5);
+    const filter = filters[currentWordIndex];
+    const wordSoFar = filter.reduce((acc, cur) => {
+      if (cur) {
+        return acc + cur.letter;
+      }
+      return acc;
+    }, "");
 
-  let correct = 0;
-  for (let j = 4; j >= 0; j--) {
-    const l = inputLetters[numberOfLetters * currentWordIndex + j];
-    if (l.textContent !== "") {
-      const key = l.textContent;
-      if (word[j] === key) {
-        animate(l, "pop", "correct");
-        correct++;
-      } else if (
-        (word.includes(key) &&
-          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)) ||
-        getOccurrence(word, key) >=
-          getOccurrence(wordSoFar.slice(0, j + 1), key) + correct
-      ) {
-        animate(l, "pop", "present");
-      } else {
-        animate(l, "pop", "absent");
+    let correct = 0;
+    for (let j = 0; j < numberOfLetters; j++) {
+      const l = inputLetters[numberOfLetters * i + j];
+      if (l.textContent !== "" && l.getAttribute("data-state") === "tbd") {
+        const key = l.textContent;
+        await animate(l, "flip-in");
+        if (word[j] === key) {
+          animate(l, "flip-out", "correct");
+          correct++;
+        } else if (
+          word.includes(key) &&
+          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)
+        ) {
+          animate(l, "flip-out", "present");
+        } else {
+          animate(l, "flip-out", "absent");
+        }
       }
     }
   }
 }
+
 function updatePossible() {
   for (i in possibleLetters) {
     let wordSoFar = "";
@@ -222,7 +224,6 @@ function updatePossible() {
         if (word[j] === key) {
           l.setAttribute("data-state", "correct");
         } else if (
-          word[j] !== key &&
           word.includes(key) &&
           getOccurrence(word, key) >= getOccurrence(wordSoFar, key)
         ) {
@@ -315,15 +316,15 @@ async function populateWord(w) {
     await populateLetter(l);
   }
   for (l of letters) {
-    animate(l, undefined, undefined, "win");
+    animate(l, "idle", undefined, "win");
   }
 }
 
 async function populateLetter(l) {
   if (l.getAttribute("data-state") !== "correct") {
     l.textContent = "";
-    await animate(l, "flip-in", "absent");
-    await animate(l, "flip-out", "correct");
+    await animate(l, "flip-in");
+    animate(l, "flip-out", "correct");
     l.textContent = word[letters.indexOf(l)];
   }
 }
