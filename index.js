@@ -130,6 +130,7 @@ document.addEventListener("keydown", async (e) => {
     selectedInput = nextSelectedInput;
     nextSelectedInput.classList.add("selected");
   }
+  updateFilters();
   if (key === "enter") {
     getWords();
   }
@@ -180,22 +181,19 @@ async function getWords() {
 }
 
 async function updateLetterContent() {
+  updateFilters();
+  console.log(filters);
   for (let i = 0; i < numberOfGuesses; i++) {
-    let wordSoFar = "";
-    let correct = 0;
+    let wordSoFar = filters[i].reduce((acc, cur) => acc + cur?.letter, "");
     for (let j = 0; j < numberOfLetters; j++) {
       const l = inputLetters[numberOfLetters * i + j];
       if (l.textContent !== "" && l.getAttribute("data-state") === "tbd") {
         const key = l.textContent;
-        wordSoFar += key;
         await animate(l, "flip-in");
-        if (word[j] === key) {
+        if (filters[i][j]?.state === "correct") {
           animate(l, "flip-out", "correct");
-          correct++;
-        } else if (
-          word.includes(key) &&
-          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)
-        ) {
+        } else if (filters[i][j]?.state === "present") {
+          console.log(filters[i][j]);
           animate(l, "flip-out", "present");
         } else {
           animate(l, "flip-out", "absent");
@@ -229,14 +227,31 @@ function restoreState() {
 
 function updateFilters() {
   for (let i = 0; i < numberOfGuesses; i++) {
-    for (let j = 0; j < numberOfLetters; j++) {
+    const wordSoFar = filters[i].reduce((acc, cur) => acc + cur?.letter, "");
+    let correct = 0;
+    for (let j = numberOfLetters - 1; j >= 0; j--) {
       const letter = inputLetters[j + numberOfLetters * i];
       if (letter.textContent != "") {
-        filters[i][j] = {
+        const key = letter.textContent;
+        fij = {
           index: j,
           letter: letter.textContent,
-          state: letter.getAttribute("data-state"),
         };
+        if (word[j] === key) {
+          fij.state = "correct";
+          correct++;
+        } else if (
+          (word.includes(key) &&
+            getOccurrence(word, key) >= getOccurrence(wordSoFar, key)) ||
+          getOccurrence(word, key) >=
+            getOccurrence(wordSoFar.slice(0, j + 1), key) + correct
+        ) {
+          console.log(key, wordSoFar);
+          fij.state = "present";
+        } else {
+          fij.state = "absent";
+        }
+        filters[i][j] = fij;
       } else {
         filters[i][j] = null;
       }
