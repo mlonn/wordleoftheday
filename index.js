@@ -75,49 +75,7 @@ for (let i = 0; i < numberOfGuesses; i++) {
   }
 }
 
-get.addEventListener("click", () => {
-  const filters = updateFilters();
-  document.getElementById("possible").innerHTML = "";
-  const possible = shuffle(words).filter((w) => {
-    for (const filter of filters) {
-      for (letter of filter) {
-        if (letter) {
-          if (letter.state === "correct" && w[letter.index] !== letter.letter) {
-            return false;
-          }
-          if (
-            letter.state === "present" &&
-            getOccurrence(word, letter.letter) > getOccurrence(w, letter.letter)
-          ) {
-            return false;
-          }
-          if (
-            letter.state === "absent" &&
-            getOccurrence(word, letter.letter) < getOccurrence(w, letter.letter)
-          ) {
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
-  });
-  console.log(possible);
-  document.getElementById("possible").innerHTML = "";
-  for (poss of possible) {
-    for (p of poss) {
-      const l = document.createElement("div");
-      l.className = "tile";
-      l.textContent = p;
-      l.setAttribute("data-state", "tbd");
-      document.getElementById("possible").appendChild(l);
-
-      possibleLetters.push(l);
-    }
-  }
-  //updatePossible();
-});
+get.addEventListener("click", getWords);
 document.addEventListener("keydown", async (e) => {
   const key = e.key.toLowerCase();
   const isLetter = key >= "a" && key <= "z" && key.length === 1;
@@ -171,9 +129,54 @@ document.addEventListener("keydown", async (e) => {
     selectedInput = nextSelectedInput;
     nextSelectedInput.classList.add("selected");
   }
+  if (key === "enter") {
+    getWords();
+  }
 });
 setWord(wordIndex);
 restoreState();
+
+function getWords() {
+  const filters = updateFilters();
+  document.getElementById("possible").innerHTML = "";
+  const possible = shuffle(words).filter((w) => {
+    for (const filter of filters) {
+      for (letter of filter) {
+        if (letter) {
+          if (letter.state === "correct" && w[letter.index] !== letter.letter) {
+            return false;
+          }
+          if (
+            letter.state === "present" &&
+            getOccurrence(word, letter.letter) > getOccurrence(w, letter.letter)
+          ) {
+            return false;
+          }
+          if (
+            letter.state === "absent" &&
+            getOccurrence(word, letter.letter) < getOccurrence(w, letter.letter)
+          ) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  });
+  document.getElementById("possible").innerHTML = "";
+  for (poss of possible) {
+    for (p of poss) {
+      const l = document.createElement("div");
+      l.className = "tile";
+      l.textContent = p;
+      l.setAttribute("data-state", "tbd");
+      document.getElementById("possible").appendChild(l);
+
+      possibleLetters.push(l);
+    }
+  }
+}
 
 function updateLetterContent() {
   const i = inputLetters.indexOf(selectedInput);
