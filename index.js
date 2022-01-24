@@ -23,10 +23,12 @@ reveal.addEventListener("click", () => {
 
 prev.addEventListener("click", () => {
   setWord(wordIndex - 1);
+  updateFilters();
 });
 
 next.addEventListener("click", () => {
   setWord(wordIndex + 1);
+  updateFilters();
 });
 const a = {
   boardState: ["ouija", "hello", "", "", "", ""],
@@ -48,6 +50,7 @@ const a = {
 };
 const letters = [];
 const inputLetters = [];
+const possibleLetters = [];
 let selectedInput;
 for (letter of word) {
   const l = document.createElement("div");
@@ -90,31 +93,39 @@ for (let i = 0; i < 5; i++) {
 
 get.addEventListener("click", () => {
   const filters = updateFilters();
-  console.log(
-    filters,
-    words.filter((word) => {
-      for (const filter of filters) {
-        for (letter of filter) {
-          if (letter) {
-            if (
-              letter.state === "correct" &&
-              word[letter.index] !== letter.letter
-            ) {
-              return false;
-            }
-            if (letter.state === "present" && !word.includes(letter.letter)) {
-              return false;
-            }
-            if (letter.state === "absent" && word.includes(letter.letter)) {
-              return false;
-            }
+  document.getElementById("possible").innerHTML = "";
+  const possible = shuffle(words).filter((w) => {
+    for (const filter of filters) {
+      for (letter of filter) {
+        if (letter) {
+          if (letter.state === "correct" && w[letter.index] !== letter.letter) {
+            return false;
+          }
+          if (letter.state === "present" && !w.includes(letter.letter)) {
+            return false;
+          }
+          if (letter.state === "absent" && w.includes(letter.letter)) {
+            return false;
           }
         }
       }
+    }
 
-      return true;
-    })
-  );
+    return true;
+  });
+  document.getElementById("possible").innerHTML = "";
+  for (poss of possible) {
+    for (p of poss) {
+      const l = document.createElement("div");
+      l.className = "tile";
+      l.textContent = p;
+      l.setAttribute("data-state", "tbd");
+      document.getElementById("possible").appendChild(l);
+
+      possibleLetters.push(l);
+    }
+  }
+  //updatePossible();
 });
 document.addEventListener("keydown", async (e) => {
   const key = e.key.toLowerCase();
@@ -204,6 +215,30 @@ function updateLetterContent() {
     }
   }
 }
+function updatePossible() {
+  for (i in possibleLetters) {
+    let wordSoFar = "";
+    const currentWordIndex = Math.floor(i / 5);
+    for (let j = 4; j >= 0; j--) {
+      const l = possibleLetters[5 * currentWordIndex + j];
+      if (l.textContent !== "") {
+        const key = l.textContent;
+        wordSoFar += key;
+        if (word[j] === key) {
+          l.setAttribute("data-state", "correct");
+        } else if (
+          word[j] !== key &&
+          word.includes(key) &&
+          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)
+        ) {
+          l.setAttribute("data-state", "present");
+        } else {
+          l.setAttribute("data-state", "absent");
+        }
+      }
+    }
+  }
+}
 
 function restoreState() {
   filters = JSON.parse(localStorage.getItem("filters")) || [
@@ -278,6 +313,7 @@ function clearLetters() {
     animate(l, "pop", "empty");
     l.textContent = "";
   }
+  document.getElementById("possible").innerHTML = "";
 }
 
 async function populateWord(w) {
@@ -326,4 +362,24 @@ function addDays(date, days) {
 
 function getOccurrence(word, letter) {
   return Array.from(word).filter((v) => v === letter).length;
+}
+function shuffle(array) {
+  const shuffled = [...array];
+  let currentIndex = shuffled.length,
+    randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [shuffled[currentIndex], shuffled[randomIndex]] = [
+      shuffled[randomIndex],
+      shuffled[currentIndex],
+    ];
+  }
+
+  return shuffled;
 }
