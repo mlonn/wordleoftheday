@@ -16,7 +16,8 @@ const days = Math.ceil(diff / (1000 * 3600 * 24)) - 1;
 let filters;
 let wordIndex = days;
 let word = words[wordIndex];
-
+const numberOfGuesses = 6;
+const numberOfLetters = 5;
 reveal.addEventListener("click", () => {
   populateWord(word);
 });
@@ -30,24 +31,7 @@ next.addEventListener("click", () => {
   setWord(wordIndex + 1);
   updateFilters();
 });
-const a = {
-  boardState: ["ouija", "hello", "", "", "", ""],
-  evaluations: [
-    ["absent", "absent", "present", "absent", "absent"],
-    ["absent", "present", "absent", "absent", "absent"],
-    null,
-    null,
-    null,
-    null,
-  ],
-  rowIndex: 2,
-  solution: "wince",
-  gameStatus: "IN_PROGRESS",
-  lastPlayedTs: 1642852867837,
-  lastCompletedTs: null,
-  restoringFromLocalStorage: null,
-  hardMode: false,
-};
+
 const letters = [];
 const inputLetters = [];
 const possibleLetters = [];
@@ -75,7 +59,7 @@ for (letter of word) {
   letters.push(l);
 }
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < numberOfGuesses; i++) {
   for (j in word) {
     const l = document.createElement("div");
     l.className = "tile";
@@ -94,7 +78,6 @@ for (let i = 0; i < 5; i++) {
 get.addEventListener("click", () => {
   const filters = updateFilters();
   document.getElementById("possible").innerHTML = "";
-  console.log(filters);
   const possible = shuffle(words).filter((w) => {
     for (const filter of filters) {
       for (letter of filter) {
@@ -104,8 +87,7 @@ get.addEventListener("click", () => {
           }
           if (
             letter.state === "present" &&
-            getOccurrence(word, letter.letter) >=
-              getOccurrence(w, letter.letter)
+            getOccurrence(word, letter.letter) > getOccurrence(w, letter.letter)
           ) {
             return false;
           }
@@ -206,7 +188,7 @@ function updateLetterContent() {
 
   let correct = 0;
   for (let j = 4; j >= 0; j--) {
-    const l = inputLetters[5 * currentWordIndex + j];
+    const l = inputLetters[numberOfLetters * currentWordIndex + j];
     if (l.textContent !== "") {
       const key = l.textContent;
       if (word[j] === key) {
@@ -230,7 +212,7 @@ function updatePossible() {
     let wordSoFar = "";
     const currentWordIndex = Math.floor(i / 5);
     for (let j = 4; j >= 0; j--) {
-      const l = possibleLetters[5 * currentWordIndex + j];
+      const l = possibleLetters[numberOfLetters * currentWordIndex + j];
       if (l.textContent !== "") {
         const key = l.textContent;
         wordSoFar += key;
@@ -251,16 +233,13 @@ function updatePossible() {
 }
 
 function restoreState() {
-  filters = JSON.parse(localStorage.getItem("filters")) || [
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-  ];
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
-      const l = inputLetters[j + 5 * i];
+  filters = JSON.parse(localStorage.getItem("filters")) || [];
+  for (let i = 0; i < numberOfGuesses; i++) {
+    for (let j = 0; j < numberOfLetters; j++) {
+      const l = inputLetters[j + numberOfLetters * i];
+      if (!filters[i]) {
+        filters.push([]);
+      }
       const current = filters[i][j];
       if (current) {
         l.textContent = current.letter;
@@ -268,15 +247,17 @@ function restoreState() {
       }
     }
   }
-  const i = inputLetters.findIndex((l) => l.textContent === "");
+  const i =
+    inputLetters.findIndex((l) => l.textContent === "") ||
+    inputLetters.length - 1;
   selectedInput = inputLetters[i];
   selectedInput.classList.add("selected");
 }
 
 function updateFilters() {
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
-      const letter = inputLetters[j + 5 * i];
+  for (let i = 0; i < numberOfGuesses; i++) {
+    for (let j = 0; j < numberOfLetters; j++) {
+      const letter = inputLetters[j + numberOfLetters * i];
       if (letter.textContent != "") {
         filters[i][j] = {
           index: j,
