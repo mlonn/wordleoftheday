@@ -94,6 +94,7 @@ for (let i = 0; i < 5; i++) {
 get.addEventListener("click", () => {
   const filters = updateFilters();
   document.getElementById("possible").innerHTML = "";
+  console.log(filters);
   const possible = shuffle(words).filter((w) => {
     for (const filter of filters) {
       for (letter of filter) {
@@ -101,10 +102,17 @@ get.addEventListener("click", () => {
           if (letter.state === "correct" && w[letter.index] !== letter.letter) {
             return false;
           }
-          if (letter.state === "present" && !w.includes(letter.letter)) {
+          if (
+            letter.state === "present" &&
+            getOccurrence(word, letter.letter) >=
+              getOccurrence(w, letter.letter)
+          ) {
             return false;
           }
-          if (letter.state === "absent" && w.includes(letter.letter)) {
+          if (
+            letter.state === "absent" &&
+            getOccurrence(word, letter.letter) < getOccurrence(w, letter.letter)
+          ) {
             return false;
           }
         }
@@ -113,6 +121,7 @@ get.addEventListener("click", () => {
 
     return true;
   });
+  console.log(possible);
   document.getElementById("possible").innerHTML = "";
   for (poss of possible) {
     for (p of poss) {
@@ -204,14 +213,15 @@ function updateLetterContent() {
         animate(l, "pop", "correct");
         correct++;
       } else if (
-        (word[j] !== key &&
-          word.includes(key) &&
+        (word.includes(key) &&
           getOccurrence(word, key) >= getOccurrence(wordSoFar, key)) ||
         getOccurrence(word, key) >=
           getOccurrence(wordSoFar.slice(0, j + 1), key) + correct
       ) {
         animate(l, "pop", "present");
-      } else animate(l, "pop", "absent");
+      } else {
+        animate(l, "pop", "absent");
+      }
     }
   }
 }
