@@ -181,20 +181,13 @@ async function getWords() {
 
 async function updateLetterContent() {
   for (let i = 0; i < numberOfGuesses; i++) {
-    const currentWordIndex = Math.floor(i / 5);
-    const filter = filters[currentWordIndex];
-    const wordSoFar = filter.reduce((acc, cur) => {
-      if (cur) {
-        return acc + cur.letter;
-      }
-      return acc;
-    }, "");
-
+    let wordSoFar = "";
     let correct = 0;
     for (let j = 0; j < numberOfLetters; j++) {
       const l = inputLetters[numberOfLetters * i + j];
       if (l.textContent !== "" && l.getAttribute("data-state") === "tbd") {
         const key = l.textContent;
+        wordSoFar += key;
         await animate(l, "flip-in");
         if (word[j] === key) {
           animate(l, "flip-out", "correct");
@@ -206,30 +199,6 @@ async function updateLetterContent() {
           animate(l, "flip-out", "present");
         } else {
           animate(l, "flip-out", "absent");
-        }
-      }
-    }
-  }
-}
-
-function updatePossible() {
-  for (i in possibleLetters) {
-    let wordSoFar = "";
-    const currentWordIndex = Math.floor(i / 5);
-    for (let j = 4; j >= 0; j--) {
-      const l = possibleLetters[numberOfLetters * currentWordIndex + j];
-      if (l.textContent !== "") {
-        const key = l.textContent;
-        wordSoFar += key;
-        if (word[j] === key) {
-          l.setAttribute("data-state", "correct");
-        } else if (
-          word.includes(key) &&
-          getOccurrence(word, key) >= getOccurrence(wordSoFar, key)
-        ) {
-          l.setAttribute("data-state", "present");
-        } else {
-          l.setAttribute("data-state", "absent");
         }
       }
     }
